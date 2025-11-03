@@ -23,13 +23,25 @@ const formData = reactive({
 
 <template>
 
-  <div style="max-width: 500px; margin: 40px auto; padding: 20px;">
-    <h2>Автоформа</h2>
+  <div class="app">
+    <h1>Автоформа по JSON-схеме</h1>
     <FormGenerator :schema="formSchema" v-model="formData" />
-    <pre>{{ JSON.stringify(formData, null, 2) }}</pre>
+    <div class="app__output">
+      <h2>Данные формы:</h2>
+      <pre>{{ JSON.stringify(formData, null, 2) }}</pre>
+    </div>
   </div>
 </template>
 
 <style scoped>
-
+.app {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+.app__output {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
 </style>

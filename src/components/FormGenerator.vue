@@ -1,7 +1,229 @@
+<script setup>
+import { ref, computed, watch } from 'vue';
+
+const props = defineProps({
+  schema: {
+    type: Object,
+    required: true
+  },
+  modelValue: {
+    type: Object,
+    required: true
+  }
+});
+
+const emit = defineEmits(['update:modelValue']);
+
+const localData = ref({ ...props.modelValue });
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    localData.value = { ...newVal };
+  },
+  { deep: true }
+);
+
+watch(
+  localData,
+  (newVal) => {
+    emit('update:modelValue', { ...newVal });
+  },
+  { deep: true }
+);
+
+const validateField = (field, value) => {
+  const errors = [];
+
+  if (field.required && (value === '' || value === undefined || value === null)) {
+    errors.push('Обязательное поле');
+  }
+
+  if (field.minLength && typeof value === 'string' && value.length < field.minLength) {
+    errors.push(`Минимум ${field.minLength} символов`);
+  }
+
+  if (field.pattern && typeof value === 'string') {
+    const regex = new RegExp(field.pattern);
+    if (!regex.test(value)) {
+      errors.push('Неверный формат');
+    }
+  }
+
+  if (field.type === 'checkbox' && field.required && value !== true) {
+    errors.push('Необходимо согласие');
+  }
+
+  return errors;
+};
+
+const fieldErrors = computed(() => {
+  const errors = {};
+  props.schema.fields.forEach((field) => {
+    const value = localData.value[field.model];
+    errors[field.model] = validateField(field, value);
+  });
+  return errors;
+});
+
+const isFormValid = computed(() => {
+  return props.schema.fields.every((field) => {
+    return fieldErrors.value[field.model].length === 0;
+  });
+});
+
+const handleChange = (model, value) => {
+  localData.value[model] = value;
+};
+
+const handleCheckboxChange = (model, event) => {
+  localData.value[model] = event.target.checked;
+};
+</script>
 
 <template>
+  <form class="form-generator">
+    <div
+      v-for="field in schema.fields"
+      :key="field.model"
+      class="form-generator__field"
+      :class="{ 'form-generator__field--invalid': fieldErrors[field.model].length > 0 }"
+    >
+      <label :for="field.model" class="form-generator__label">
+        {{ field.label }}
+      </label>
+
+      <div v-if="field.type === 'select'" class="form-generator__control">
+        <select
+          :id="field.model"
+          :value="localData[field.model] || ''"
+          @change="(e) => handleChange(field.model, e.target.value)"
+          class="form-generator__select"
+        >
+          <option value="" disabled>Выберите...</option>
+          <option
+            v-for="(option, idx) in field.options"
+            :key="idx"
+            :value="option"
+          >
+            {{ option }}
+          </option>
+        </select>
+      </div>
+
+      <div v-else-if="field.type === 'checkbox'" class="form-generator__control">
+        <input
+          :id="field.model"
+          type="checkbox"
+          :checked="localData[field.model] === true"
+          @change="(e) => handleCheckboxChange(field.model, e)"
+          class="form-generator__checkbox"
+        />
+      </div>
+
+      <div v-else class="form-generator__control">
+        <input
+          :id="field.model"
+          :type="field.type"
+          :value="localData[field.model] || ''"
+          @input="(e) => handleChange(field.model, e.target.value)"
+          :placeholder="field.placeholder || ''"
+          class="form-generator__input"
+        />
+      </div>
+
+      <div v-if="fieldErrors[field.model].length > 0" class="form-generator__error">
+        {{ fieldErrors[field.model].join('; ') }}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="form-generator__submit"
+      :disabled="!isFormValid"
+      @click="$emit('submit', localData)"
+    >
+      Отправить
+    </button>
+  </form>
 </template>
 
 <style scoped>
+.form-generator {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 500px;
+}
 
+.form-generator__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-generator__field--invalid .form-generator__input,
+.form-generator__field--invalid .form-generator__select {
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}
+
+.form-generator__label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.form-generator__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-generator__input,
+.form-generator__select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-generator__input:focus,
+.form-generator__select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-generator__checkbox {
+  width: auto;
+  height: 16px;
+}
+
+.form-generator__error {
+  color: #e74c3c;
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.form-generator__submit {
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-generator__submit:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.form-generator__submit:not(:disabled):hover {
+  background-color: #2980b9;
+}
 </style>
