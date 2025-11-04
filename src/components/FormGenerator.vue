@@ -1,18 +1,18 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch } from "vue";
 
 const props = defineProps({
   schema: {
     type: Object,
-    required: true
+    required: true,
   },
   modelValue: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(["update:modelValue"]);
 
 const localData = ref({ ...props.modelValue });
 
@@ -27,7 +27,7 @@ watch(
 watch(
   localData,
   (newVal) => {
-    emit('update:modelValue', { ...newVal });
+    emit("update:modelValue", { ...newVal });
   },
   { deep: true }
 );
@@ -35,23 +35,23 @@ watch(
 const validateField = (field, value) => {
   const errors = [];
 
-  if (field.required && (value === '' || value === undefined || value === null)) {
-    errors.push('Обязательное поле');
+  if (field.required && (value === "" || value === undefined || value === null)) {
+    errors.push("Обязательное поле");
   }
 
-  if (field.minLength && typeof value === 'string' && value.length < field.minLength) {
+  if (field.minLength && typeof value === "string" && value.length < field.minLength) {
     errors.push(`Минимум ${field.minLength} символов`);
   }
 
-  if (field.pattern && typeof value === 'string') {
+  if (field.pattern && typeof value === "string") {
     const regex = new RegExp(field.pattern);
     if (!regex.test(value)) {
-      errors.push('Неверный формат');
+      errors.push("Неверный формат");
     }
   }
 
-  if (field.type === 'checkbox' && field.required && value !== true) {
-    errors.push('Необходимо согласие');
+  if (field.type === "checkbox" && field.required && value !== true) {
+    errors.push("Необходимо согласие");
   }
 
   return errors;
@@ -101,11 +101,7 @@ const handleCheckboxChange = (model, event) => {
           class="form-generator__select"
         >
           <option value="" disabled>Выберите...</option>
-          <option
-            v-for="(option, idx) in field.options"
-            :key="idx"
-            :value="option"
-          >
+          <option v-for="(option, idx) in field.options" :key="idx" :value="option">
             {{ option }}
           </option>
         </select>
@@ -133,18 +129,9 @@ const handleCheckboxChange = (model, event) => {
       </div>
 
       <div v-if="fieldErrors[field.model].length > 0" class="form-generator__error">
-        {{ fieldErrors[field.model].join('; ') }}
+        {{ fieldErrors[field.model].join("; ") }}
       </div>
     </div>
-
-    <button
-      type="button"
-      class="form-generator__submit"
-      :disabled="!isFormValid"
-      @click="$emit('submit', localData)"
-    >
-      Отправить
-    </button>
   </form>
 </template>
 
@@ -205,25 +192,5 @@ const handleCheckboxChange = (model, event) => {
   color: #e74c3c;
   font-size: 12px;
   min-height: 16px;
-}
-
-.form-generator__submit {
-  padding: 10px 20px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.form-generator__submit:disabled {
-  background-color: #bdc3c7;
-  cursor: not-allowed;
-}
-
-.form-generator__submit:not(:disabled):hover {
-  background-color: #2980b9;
 }
 </style>
