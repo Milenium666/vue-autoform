@@ -52,6 +52,10 @@ if (savedData) {
 
 const applySchema = () => {
   try {
+    if (!schemaJson.value.trim()) {
+      throw new Error("Поле JSON-схемы не может быть пустым");
+    }
+
     const parsed = JSON.parse(schemaJson.value);
     let schema = null;
 
@@ -125,7 +129,11 @@ const applySchema = () => {
 
   } catch (err) {
     parsedSchema.value = null;
-    schemaError.value = err.message || "Ошибка при разборе JSON.";
+    if (err instanceof SyntaxError) {
+      schemaError.value = "Ошибка разбора JSON: проверьте корректность ввода";
+    } else {
+      schemaError.value = err.message || "Ошибка при разборе JSON.";
+    }
   }
 };
 
@@ -137,7 +145,7 @@ watch(
     const { password, ...safeData } = newVal;
     localStorage.setItem("formData", JSON.stringify(safeData));
   },
-  { deep: true, flush: 'post' } 
+  { deep: true, flush: "post" }
 );
 
 const displayData = computed(() => {
