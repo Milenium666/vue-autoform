@@ -118,16 +118,18 @@ const handleBlur = (model) => {
 
 <style scoped>
 .form-generator {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 16px;
   max-width: 500px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-generator__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 6px;
 }
 
 .form-generator__field--invalid .form-generator__input,
@@ -155,23 +157,46 @@ const handleBlur = (model) => {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
+  box-sizing: border-box;
 }
 
 .form-generator__input:focus,
 .form-generator__select:focus {
   outline: none;
   border-color: #3498db;
+  background-color: #f0f8ff;
 }
 
 .form-generator__checkbox {
-  width: auto;
+  width: 16px;
   height: 16px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: outline 0.2s;
+}
+
+.form-generator__checkbox:hover,
+.form-generator__checkbox:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
 }
 
 .form-generator__error {
   color: #e74c3c;
   font-size: 12px;
   min-height: 16px;
+}
+
+@media (max-width: 500px) {
+  .form-generator__control {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .app__schema-textarea {
+    height: 150px;
+  }
 }
 </style>

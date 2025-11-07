@@ -173,6 +173,7 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   max-width: 800px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .app__schema-label {
@@ -184,6 +185,7 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
 
 .app__schema-textarea {
   width: 100%;
+  max-width: 100%;
   height: 200px;
   padding: 12px;
   border: 1px solid #ccc;
@@ -192,6 +194,14 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
   font-size: 14px;
   resize: vertical;
   margin-bottom: 12px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.app__schema-textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  background-color: #f0f8ff;
 }
 
 .app__apply-btn {
@@ -202,6 +212,7 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.2s;
 }
 
 .app__apply-btn:hover {
@@ -228,4 +239,5 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
   border-radius: 6px;
   overflow-x: auto;
 }
+
 </style>
