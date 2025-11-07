@@ -1,16 +1,32 @@
 <script setup>
-import { ref, computed } from 'vue';
-import FormGenerator from './components/FormGenerator.vue';
+import { ref, computed } from "vue";
+import FormGenerator from "./components/FormGenerator.vue";
 
-const initialSchemaJson = JSON.stringify({
-  fields: [
-    { type: 'text', label: 'Имя', model: 'name', required: true },
-    { type: 'email', label: 'Email', model: 'email', required: true },
-    { type: 'password', label: 'Пароль', model: 'password', required: true, minLength: 6 },
-    { type: 'select', label: 'Роль', model: 'role', options: ['Админ', 'Пользователь'], required: true },
-    { type: 'checkbox', label: 'Согласен с условиями', model: 'terms', required: true }
-  ]
-}, null, 2);
+const initialSchemaJson = JSON.stringify(
+  {
+    fields: [
+      { type: "text", label: "Имя", model: "name", required: true },
+      { type: "email", label: "Email", model: "email", required: true },
+      {
+        type: "password",
+        label: "Пароль",
+        model: "password",
+        required: true,
+        minLength: 6,
+      },
+      {
+        type: "select",
+        label: "Роль",
+        model: "role",
+        options: ["Админ", "Пользователь"],
+        required: true,
+      },
+      { type: "checkbox", label: "Согласен с условиями", model: "terms", required: true },
+    ],
+  },
+  null,
+  2
+);
 
 const schemaJson = ref(initialSchemaJson);
 const parsedSchema = ref(null);
@@ -22,15 +38,15 @@ const applySchema = () => {
     const parsed = JSON.parse(schemaJson.value);
     let schema = null;
 
-    // Определяем, где находятся поля
     if (Array.isArray(parsed.fields)) {
       schema = parsed;
     } else if (Array.isArray(parsed)) {
       schema = { fields: parsed };
     } else {
-      // Попытка найти массив объектов с type внутри произвольного объекта
       const possibleFields = Object.values(parsed).find(
-        v => Array.isArray(v) && v.every(item => typeof item === "object" && "type" in item)
+        (v) =>
+          Array.isArray(v) &&
+          v.every((item) => typeof item === "object" && "type" in item)
       );
       if (possibleFields) {
         schema = { fields: possibleFields };
@@ -41,31 +57,38 @@ const applySchema = () => {
       }
     }
 
-    // Проверка корректности полей
     const seenModels = new Set();
     const warnings = [];
 
     schema.fields.forEach((field, idx) => {
       if (!field.model) {
-        throw new Error(`Ошибка: у поля №${idx + 1} отсутствует обязательное свойство "model".`);
+        throw new Error(
+          `Ошибка: у поля №${idx + 1} отсутствует обязательное свойство "model".`
+        );
       }
 
       if (seenModels.has(field.model)) {
-        throw new Error(`Ошибка: свойство "model" "${field.model}" встречается несколько раз. Оно должно быть уникальным.`);
+        throw new Error(
+          `Ошибка: свойство "model" "${field.model}" встречается несколько раз. Оно должно быть уникальным.`
+        );
       }
       seenModels.add(field.model);
 
       const allowedTypes = ["text", "email", "password", "select", "checkbox"];
       if (!field.type || !allowedTypes.includes(field.type)) {
         warnings.push(
-          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${field.type}". Тип автоматически заменён на "text".`
+          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${
+            field.type
+          }". Тип автоматически заменён на "text".`
         );
         field.type = "text";
       }
 
       if (field.type === "select" && !Array.isArray(field.options)) {
         warnings.push(
-          `⚠️ Поле "${field.label || field.model}" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
+          `⚠️ Поле "${
+            field.label || field.model
+          }" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
         );
         field.options = [];
       }
@@ -74,13 +97,11 @@ const applySchema = () => {
     parsedSchema.value = schema;
     schemaError.value = warnings.length ? warnings.join("\n") : null;
 
-    // Инициализация модели формы
     const data = {};
     schema.fields.forEach((field) => {
       data[field.model] = field.type === "checkbox" ? false : "";
     });
     formData.value = data;
-
   } catch (err) {
     parsedSchema.value = null;
     schemaError.value = err.message || "Ошибка при разборе JSON.";
@@ -122,7 +143,7 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
 <style scoped>
 .app {
   padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   max-width: 800px;
   margin: 0 auto;
 }

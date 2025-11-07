@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from "vue";
-import { useValidation } from "../composables/useValidation.js"; 
+import { useValidation } from "../composables/useValidation.js";
 
 const props = defineProps({
   schema: {
@@ -16,6 +16,11 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 const localData = ref({ ...props.modelValue });
+
+const touched = ref({});
+props.schema.fields.forEach((field) => {
+  touched.value[field.model] = false;
+});
 
 watch(
   () => props.modelValue,
@@ -42,6 +47,10 @@ const handleChange = (model, value) => {
 const handleCheckboxChange = (model, event) => {
   localData.value[model] = event.target.checked;
 };
+
+const handleBlur = (model) => {
+  touched.value[model] = true;
+};
 </script>
 
 <template>
@@ -50,7 +59,10 @@ const handleCheckboxChange = (model, event) => {
       v-for="field in schema.fields"
       :key="field.model"
       class="form-generator__field"
-      :class="{ 'form-generator__field--invalid': fieldErrors[field.model].length > 0 }"
+      :class="{
+        'form-generator__field--invalid':
+          touched[field.model] && fieldErrors[field.model].length > 0,
+      }"
     >
       <label :for="field.model" class="form-generator__label">
         {{ field.label }}
@@ -61,6 +73,7 @@ const handleCheckboxChange = (model, event) => {
           :id="field.model"
           :value="localData[field.model] || ''"
           @change="(e) => handleChange(field.model, e.target.value)"
+          @blur="() => handleBlur(field.model)"
           class="form-generator__select"
         >
           <option value="" disabled>Выберите...</option>
@@ -76,6 +89,7 @@ const handleCheckboxChange = (model, event) => {
           type="checkbox"
           :checked="localData[field.model] === true"
           @change="(e) => handleCheckboxChange(field.model, e)"
+          @blur="() => handleBlur(field.model)"
           class="form-generator__checkbox"
         />
       </div>
@@ -86,16 +100,19 @@ const handleCheckboxChange = (model, event) => {
           :type="field.type"
           :value="localData[field.model] || ''"
           @input="(e) => handleChange(field.model, e.target.value)"
+          @blur="() => handleBlur(field.model)"
           :placeholder="field.placeholder || ''"
           class="form-generator__input"
         />
       </div>
 
-      <div v-if="fieldErrors[field.model].length > 0" class="form-generator__error">
+      <div
+        v-if="touched[field.model] && fieldErrors[field.model].length > 0"
+        class="form-generator__error"
+      >
         {{ fieldErrors[field.model].join("; ") }}
       </div>
     </div>
-
   </form>
 </template>
 
@@ -157,6 +174,4 @@ const handleCheckboxChange = (model, event) => {
   font-size: 12px;
   min-height: 16px;
 }
-
-
 </style>
