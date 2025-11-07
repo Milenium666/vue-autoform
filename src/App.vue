@@ -19,12 +19,29 @@ const formData = ref({});
 
 const applySchema = () => {
   try {
-    const schema = JSON.parse(schemaJson.value);
+    const parsed = JSON.parse(schemaJson.value);
+    let schema = null;
 
-    if (!Array.isArray(schema.fields)) {
-      throw new Error('Ошибка: схема должна содержать массив "fields".');
+    // Определяем, где находятся поля
+    if (Array.isArray(parsed.fields)) {
+      schema = parsed;
+    } else if (Array.isArray(parsed)) {
+      schema = { fields: parsed };
+    } else {
+      // Попытка найти массив объектов с type внутри произвольного объекта
+      const possibleFields = Object.values(parsed).find(
+        v => Array.isArray(v) && v.every(item => typeof item === "object" && "type" in item)
+      );
+      if (possibleFields) {
+        schema = { fields: possibleFields };
+      } else {
+        throw new Error(
+          'Не удалось найти массив полей формы. Убедитесь, что схема содержит "fields" или массив с объектами полей.'
+        );
+      }
     }
 
+    // Проверка корректности полей
     const seenModels = new Set();
     const warnings = [];
 
@@ -38,45 +55,41 @@ const applySchema = () => {
       }
       seenModels.add(field.model);
 
-      const allowedTypes = ['text', 'email', 'password', 'select', 'checkbox'];
+      const allowedTypes = ["text", "email", "password", "select", "checkbox"];
       if (!field.type || !allowedTypes.includes(field.type)) {
         warnings.push(
-          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${field.type}". `
-          + `Тип автоматически заменён на "text".`
+          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${field.type}". Тип автоматически заменён на "text".`
         );
-        field.type = 'text';
+        field.type = "text";
       }
 
-      if (field.type === 'select' && !Array.isArray(field.options)) {
+      if (field.type === "select" && !Array.isArray(field.options)) {
         warnings.push(
-          `⚠️ Поле "${field.label || field.model}" имеет тип "select", `
-          + `но список "options" отсутствует или указан неверно. Использован пустой список.`
+          `⚠️ Поле "${field.label || field.model}" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
         );
         field.options = [];
       }
     });
 
     parsedSchema.value = schema;
+    schemaError.value = warnings.length ? warnings.join("\n") : null;
 
-    schemaError.value = warnings.length ? warnings.join('\n') : null;
-
+    // Инициализация модели формы
     const data = {};
     schema.fields.forEach((field) => {
-      data[field.model] = field.type === 'checkbox' ? false : '';
+      data[field.model] = field.type === "checkbox" ? false : "";
     });
     formData.value = data;
 
   } catch (err) {
     parsedSchema.value = null;
-    schemaError.value = err.message;
+    schemaError.value = err.message || "Ошибка при разборе JSON.";
   }
 };
 
 applySchema();
 
-const displayData = computed(() => {
-  return JSON.stringify(formData.value, null, 2);
-});
+const displayData = computed(() => JSON.stringify(formData.value, null, 2));
 </script>
 
 <template>
