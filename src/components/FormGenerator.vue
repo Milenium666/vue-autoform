@@ -3,20 +3,15 @@ import { ref, watch } from "vue";
 import { useValidation } from "../composables/useValidation.js";
 
 const props = defineProps({
-  schema: {
-    type: Object,
-    required: true,
-  },
-  modelValue: {
-    type: Object,
-    required: true,
-  },
+  schema: { type: Object, required: true },
+  modelValue: { type: Object, required: true },
 });
 
 const emit = defineEmits(["update:modelValue"]);
 
 const localData = ref({ ...props.modelValue });
 const touched = ref({});
+
 props.schema.fields.forEach((field) => {
   touched.value[field.model] = false;
 });
@@ -24,17 +19,26 @@ props.schema.fields.forEach((field) => {
 watch(
   () => props.modelValue,
   (newVal) => {
-    localData.value = { ...newVal };
+    Object.keys(newVal).forEach((key) => {
+      if (localData.value[key] !== newVal[key]) {
+        localData.value[key] = newVal[key];
+      }
+    });
   },
-  { deep: true }
+  { deep: true, flush: "post" }
 );
 
 watch(
   localData,
   (newVal) => {
-    emit("update:modelValue", { ...newVal });
+    const changed = Object.keys(newVal).some(
+      (key) => props.modelValue[key] !== newVal[key]
+    );
+    if (changed) {
+      emit("update:modelValue", { ...newVal });
+    }
   },
-  { deep: true }
+  { deep: true, flush: "post" }
 );
 
 const { fieldErrors } = useValidation(props.schema, localData);
@@ -64,12 +68,12 @@ const handleBlur = (model) => {
           class="form-generator__field"
           :class="{
             'form-generator__field--invalid':
-              touched[field.model] && fieldErrors[field.model].length > 0,
+              touched[field.model] && fieldErrors[field.model]?.length > 0,
           }"
         >
-          <label :for="field.model" class="form-generator__label">
-            {{ field.label }}
-          </label>
+          <label :for="field.model" class="form-generator__label">{{
+            field.label
+          }}</label>
 
           <div v-if="field.type === 'select'" class="form-generator__control">
             <select
@@ -111,7 +115,7 @@ const handleBlur = (model) => {
 
           <transition name="fade">
             <div
-              v-if="touched[field.model] && fieldErrors[field.model].length > 0"
+              v-if="touched[field.model] && fieldErrors[field.model]?.length > 0"
               class="form-generator__error"
             >
               {{ fieldErrors[field.model].join("; ") }}

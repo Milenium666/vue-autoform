@@ -83,7 +83,6 @@ const applySchema = () => {
           `Ошибка: у поля №${idx + 1} отсутствует обязательное свойство "model".`
         );
       }
-
       if (seenModels.has(field.model)) {
         throw new Error(
           `Ошибка: свойство "model" "${field.model}" встречается несколько раз. Оно должно быть уникальным.`
@@ -94,18 +93,14 @@ const applySchema = () => {
       const allowedTypes = ["text", "email", "password", "select", "checkbox"];
       if (!field.type || !allowedTypes.includes(field.type)) {
         warnings.push(
-          `Поле "${field.label || field.model}" имеет недопустимый тип "${
-            field.type
-          }". Тип автоматически заменён на "text".`
+          `Поле "${field.label || field.model}" имеет недопустимый тип "${field.type}". Тип автоматически заменён на "text".`
         );
         field.type = "text";
       }
 
       if (field.type === "select" && !Array.isArray(field.options)) {
         warnings.push(
-          `Поле "${
-            field.label || field.model
-          }" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
+          `Поле "${field.label || field.model}" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
         );
         field.options = [];
       }
@@ -125,9 +120,9 @@ const applySchema = () => {
     formData.value = data;
 
     localStorage.setItem("schemaJson", schemaJson.value);
-
     const { password, ...safeData } = formData.value;
     localStorage.setItem("formData", JSON.stringify(safeData));
+
   } catch (err) {
     parsedSchema.value = null;
     schemaError.value = err.message || "Ошибка при разборе JSON.";
@@ -142,15 +137,13 @@ watch(
     const { password, ...safeData } = newVal;
     localStorage.setItem("formData", JSON.stringify(safeData));
   },
-  { deep: true }
+  { deep: true, flush: 'post' } 
 );
 
 const displayData = computed(() => {
-  const masked = { ...formData.value };
-  if (masked.password) {
-    masked.password = "********";
-  }
-  return JSON.stringify(masked, null, 2);
+  const copy = { ...formData.value };
+  if (copy.password) copy.password = "********";
+  return JSON.stringify(copy, null, 2);
 });
 </script>
 
