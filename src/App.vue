@@ -21,7 +21,12 @@ const initialSchemaJson = JSON.stringify(
         options: ["Админ", "Пользователь"],
         required: true,
       },
-      { type: "checkbox", label: "Согласен с условиями", model: "terms", required: true },
+      {
+        type: "checkbox",
+        label: "Согласен с условиями",
+        model: "terms",
+        required: true,
+      },
     ],
   },
   null,
@@ -120,7 +125,9 @@ const applySchema = () => {
     formData.value = data;
 
     localStorage.setItem("schemaJson", schemaJson.value);
-    localStorage.setItem("formData", JSON.stringify(formData.value));
+
+    const { password, ...safeData } = formData.value;
+    localStorage.setItem("formData", JSON.stringify(safeData));
   } catch (err) {
     parsedSchema.value = null;
     schemaError.value = err.message || "Ошибка при разборе JSON.";
@@ -132,12 +139,19 @@ if (!parsedSchema.value) applySchema();
 watch(
   formData,
   (newVal) => {
-    localStorage.setItem("formData", JSON.stringify(newVal));
+    const { password, ...safeData } = newVal;
+    localStorage.setItem("formData", JSON.stringify(safeData));
   },
   { deep: true }
 );
 
-const displayData = computed(() => JSON.stringify(formData.value, null, 2));
+const displayData = computed(() => {
+  const masked = { ...formData.value };
+  if (masked.password) {
+    masked.password = "********";
+  }
+  return JSON.stringify(masked, null, 2);
+});
 </script>
 
 <template>
@@ -239,5 +253,4 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
   border-radius: 6px;
   overflow-x: auto;
 }
-
 </style>
