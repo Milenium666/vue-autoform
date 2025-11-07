@@ -22,7 +22,7 @@ const applySchema = () => {
     const schema = JSON.parse(schemaJson.value);
 
     if (!Array.isArray(schema.fields)) {
-      throw new Error('Схема должна содержать массив "fields"');
+      throw new Error('Ошибка: схема должна содержать массив "fields".');
     }
 
     const seenModels = new Set();
@@ -30,43 +30,53 @@ const applySchema = () => {
 
     schema.fields.forEach((field, idx) => {
       if (!field.model) {
-        throw new Error(`Поле №${idx + 1} не содержит "model"`);
+        throw new Error(`Ошибка: у поля №${idx + 1} отсутствует обязательное свойство "model".`);
       }
+
       if (seenModels.has(field.model)) {
-        throw new Error(`Дублируется model "${field.model}"`);
+        throw new Error(`Ошибка: свойство "model" "${field.model}" встречается несколько раз. Оно должно быть уникальным.`);
       }
       seenModels.add(field.model);
 
-      const validTypes = ['text', 'email', 'password', 'select', 'checkbox'];
-      if (!field.type || !validTypes.includes(field.type)) {
-        warnings.push(`⚠️ Поле "${field.label || field.model}" имеет некорректный type "${field.type}". Будет использован "text".`);
+      const allowedTypes = ['text', 'email', 'password', 'select', 'checkbox'];
+      if (!field.type || !allowedTypes.includes(field.type)) {
+        warnings.push(
+          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${field.type}". `
+          + `Тип автоматически заменён на "text".`
+        );
         field.type = 'text';
       }
 
       if (field.type === 'select' && !Array.isArray(field.options)) {
-        warnings.push(`⚠️ У поля "${field.label || field.model}" тип "select", но не указаны options.`);
+        warnings.push(
+          `⚠️ Поле "${field.label || field.model}" имеет тип "select", `
+          + `но список "options" отсутствует или указан неверно. Использован пустой список.`
+        );
         field.options = [];
       }
     });
 
     parsedSchema.value = schema;
+
     schemaError.value = warnings.length ? warnings.join('\n') : null;
 
     const data = {};
-    schema.fields.forEach(field => {
+    schema.fields.forEach((field) => {
       data[field.model] = field.type === 'checkbox' ? false : '';
     });
     formData.value = data;
 
   } catch (err) {
     parsedSchema.value = null;
-    schemaError.value = 'Ошибка в JSON: ' + err.message;
+    schemaError.value = err.message;
   }
 };
 
 applySchema();
 
-const displayData = computed(() => JSON.stringify(formData.value, null, 2));
+const displayData = computed(() => {
+  return JSON.stringify(formData.value, null, 2);
+});
 </script>
 
 <template>
@@ -81,10 +91,8 @@ const displayData = computed(() => JSON.stringify(formData.value, null, 2));
         class="app__schema-textarea"
         placeholder='{"fields": [...]}'
       ></textarea>
-
       <button @click="applySchema" class="app__apply-btn">Применить схему</button>
-
-      <div v-if="schemaError" class="app__error" v-html="schemaError.replace(/\n/g, '<br/>')"></div>
+      <div v-if="schemaError" class="app__error">{{ schemaError }}</div>
     </div>
 
     <div v-if="parsedSchema" class="app__form-container">
