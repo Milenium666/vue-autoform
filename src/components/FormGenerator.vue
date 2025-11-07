@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, watch } from "vue";
+import { useValidation } from "../composables/useValidation.js"; 
 
 const props = defineProps({
   schema: {
@@ -32,45 +33,7 @@ watch(
   { deep: true }
 );
 
-const validateField = (field, value) => {
-  const errors = [];
-
-  if (field.required && (value === "" || value === undefined || value === null)) {
-    errors.push("Обязательное поле");
-  }
-
-  if (field.minLength && typeof value === "string" && value.length < field.minLength) {
-    errors.push(`Минимум ${field.minLength} символов`);
-  }
-
-  if (field.pattern && typeof value === "string") {
-    const regex = new RegExp(field.pattern);
-    if (!regex.test(value)) {
-      errors.push("Неверный формат");
-    }
-  }
-
-  if (field.type === "checkbox" && field.required && value !== true) {
-    errors.push("Необходимо согласие");
-  }
-
-  return errors;
-};
-
-const fieldErrors = computed(() => {
-  const errors = {};
-  props.schema.fields.forEach((field) => {
-    const value = localData.value[field.model];
-    errors[field.model] = validateField(field, value);
-  });
-  return errors;
-});
-
-const isFormValid = computed(() => {
-  return props.schema.fields.every((field) => {
-    return fieldErrors.value[field.model].length === 0;
-  });
-});
+const { fieldErrors, isFormValid } = useValidation(props.schema, localData);
 
 const handleChange = (model, value) => {
   localData.value[model] = value;
@@ -132,6 +95,7 @@ const handleCheckboxChange = (model, event) => {
         {{ fieldErrors[field.model].join("; ") }}
       </div>
     </div>
+
   </form>
 </template>
 
@@ -193,4 +157,6 @@ const handleCheckboxChange = (model, event) => {
   font-size: 12px;
   min-height: 16px;
 }
+
+
 </style>
