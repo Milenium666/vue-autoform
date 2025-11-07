@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import FormGenerator from "./components/FormGenerator.vue";
 
 const initialSchemaJson = JSON.stringify(
@@ -32,6 +32,18 @@ const schemaJson = ref(initialSchemaJson);
 const parsedSchema = ref(null);
 const schemaError = ref(null);
 const formData = ref({});
+
+const savedSchema = localStorage.getItem("schemaJson");
+if (savedSchema) schemaJson.value = savedSchema;
+
+const savedData = localStorage.getItem("formData");
+if (savedData) {
+  try {
+    formData.value = JSON.parse(savedData);
+  } catch {
+    formData.value = {};
+  }
+}
 
 const applySchema = () => {
   try {
@@ -77,7 +89,7 @@ const applySchema = () => {
       const allowedTypes = ["text", "email", "password", "select", "checkbox"];
       if (!field.type || !allowedTypes.includes(field.type)) {
         warnings.push(
-          `⚠️ Поле "${field.label || field.model}" имеет недопустимый тип "${
+          `Поле "${field.label || field.model}" имеет недопустимый тип "${
             field.type
           }". Тип автоматически заменён на "text".`
         );
@@ -86,7 +98,7 @@ const applySchema = () => {
 
       if (field.type === "select" && !Array.isArray(field.options)) {
         warnings.push(
-          `⚠️ Поле "${
+          `Поле "${
             field.label || field.model
           }" имеет тип "select", но список "options" отсутствует или указан неверно. Использован пустой список.`
         );
@@ -99,16 +111,31 @@ const applySchema = () => {
 
     const data = {};
     schema.fields.forEach((field) => {
-      data[field.model] = field.type === "checkbox" ? false : "";
+      if (formData.value[field.model] !== undefined) {
+        data[field.model] = formData.value[field.model];
+      } else {
+        data[field.model] = field.type === "checkbox" ? false : "";
+      }
     });
     formData.value = data;
+
+    localStorage.setItem("schemaJson", schemaJson.value);
+    localStorage.setItem("formData", JSON.stringify(formData.value));
   } catch (err) {
     parsedSchema.value = null;
     schemaError.value = err.message || "Ошибка при разборе JSON.";
   }
 };
 
-applySchema();
+if (!parsedSchema.value) applySchema();
+
+watch(
+  formData,
+  (newVal) => {
+    localStorage.setItem("formData", JSON.stringify(newVal));
+  },
+  { deep: true }
+);
 
 const displayData = computed(() => JSON.stringify(formData.value, null, 2));
 </script>
