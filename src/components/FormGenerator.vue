@@ -16,7 +16,6 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 const localData = ref({ ...props.modelValue });
-
 const touched = ref({});
 props.schema.fields.forEach((field) => {
   touched.value[field.model] = false;
@@ -38,7 +37,7 @@ watch(
   { deep: true }
 );
 
-const { fieldErrors, isFormValid } = useValidation(props.schema, localData);
+const { fieldErrors } = useValidation(props.schema, localData);
 
 const handleChange = (model, value) => {
   localData.value[model] = value;
@@ -55,80 +54,91 @@ const handleBlur = (model) => {
 
 <template>
   <form class="form-generator">
-    <div
-      v-for="field in schema.fields"
-      :key="field.model"
-      class="form-generator__field"
-      :class="{
-        'form-generator__field--invalid':
-          touched[field.model] && fieldErrors[field.model].length > 0,
-      }"
-    >
-      <label :for="field.model" class="form-generator__label">
-        {{ field.label }}
-      </label>
-
-      <div v-if="field.type === 'select'" class="form-generator__control">
-        <select
-          :id="field.model"
-          :value="localData[field.model] || ''"
-          @change="(e) => handleChange(field.model, e.target.value)"
-          @blur="() => handleBlur(field.model)"
-          class="form-generator__select"
-        >
-          <option value="" disabled>Выберите...</option>
-          <option v-for="(option, idx) in field.options" :key="idx" :value="option">
-            {{ option }}
-          </option>
-        </select>
-      </div>
-
-      <div v-else-if="field.type === 'checkbox'" class="form-generator__control">
-        <input
-          :id="field.model"
-          type="checkbox"
-          :checked="localData[field.model] === true"
-          @change="(e) => handleCheckboxChange(field.model, e)"
-          @blur="() => handleBlur(field.model)"
-          class="form-generator__checkbox"
-        />
-      </div>
-
-      <div v-else class="form-generator__control">
-        <input
-          :id="field.model"
-          :type="field.type"
-          :value="localData[field.model] || ''"
-          @input="(e) => handleChange(field.model, e.target.value)"
-          @blur="() => handleBlur(field.model)"
-          :placeholder="field.placeholder || ''"
-          class="form-generator__input"
-        />
-      </div>
-
+    <transition-group name="fade" tag="div" class="form-generator__fields">
       <div
-        v-if="touched[field.model] && fieldErrors[field.model].length > 0"
-        class="form-generator__error"
+        v-for="field in schema.fields"
+        :key="field.model"
+        class="form-generator__field-wrapper"
       >
-        {{ fieldErrors[field.model].join("; ") }}
+        <div
+          class="form-generator__field"
+          :class="{
+            'form-generator__field--invalid':
+              touched[field.model] && fieldErrors[field.model].length > 0,
+          }"
+        >
+          <label :for="field.model" class="form-generator__label">
+            {{ field.label }}
+          </label>
+
+          <div v-if="field.type === 'select'" class="form-generator__control">
+            <select
+              :id="field.model"
+              :value="localData[field.model] || ''"
+              @change="(e) => handleChange(field.model, e.target.value)"
+              @blur="() => handleBlur(field.model)"
+              class="form-generator__select"
+            >
+              <option value="" disabled>Выберите...</option>
+              <option v-for="(option, idx) in field.options" :key="idx" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
+
+          <div v-else-if="field.type === 'checkbox'" class="form-generator__control">
+            <input
+              :id="field.model"
+              type="checkbox"
+              :checked="localData[field.model] === true"
+              @change="(e) => handleCheckboxChange(field.model, e)"
+              @blur="() => handleBlur(field.model)"
+              class="form-generator__checkbox"
+            />
+          </div>
+
+          <div v-else class="form-generator__control">
+            <input
+              :id="field.model"
+              :type="field.type"
+              :value="localData[field.model] || ''"
+              @input="(e) => handleChange(field.model, e.target.value)"
+              @blur="() => handleBlur(field.model)"
+              :placeholder="field.placeholder || ''"
+              class="form-generator__input"
+            />
+          </div>
+
+          <transition name="fade">
+            <div
+              v-if="touched[field.model] && fieldErrors[field.model].length > 0"
+              class="form-generator__error"
+            >
+              {{ fieldErrors[field.model].join("; ") }}
+            </div>
+          </transition>
+        </div>
       </div>
-    </div>
+    </transition-group>
   </form>
 </template>
 
 <style scoped>
 .form-generator {
   display: grid;
-  grid-template-columns: 1fr;
   row-gap: 16px;
   max-width: 500px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.form-generator__field {
+.form-generator__fields {
   display: grid;
-  grid-template-columns: 1fr;
+  row-gap: 16px;
+}
+
+.form-generator__field-wrapper {
+  display: grid;
   row-gap: 6px;
 }
 
@@ -188,15 +198,20 @@ const handleBlur = (model) => {
   min-height: 16px;
 }
 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 @media (max-width: 500px) {
   .form-generator__control {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
-  }
-
-  .app__schema-textarea {
-    height: 150px;
   }
 }
 </style>
