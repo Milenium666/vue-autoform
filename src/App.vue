@@ -20,28 +20,53 @@ const formData = ref({});
 const applySchema = () => {
   try {
     const schema = JSON.parse(schemaJson.value);
+
     if (!Array.isArray(schema.fields)) {
       throw new Error('Схема должна содержать массив "fields"');
     }
+
+    const seenModels = new Set();
+    const warnings = [];
+
+    schema.fields.forEach((field, idx) => {
+      if (!field.model) {
+        throw new Error(`Поле №${idx + 1} не содержит "model"`);
+      }
+      if (seenModels.has(field.model)) {
+        throw new Error(`Дублируется model "${field.model}"`);
+      }
+      seenModels.add(field.model);
+
+      const validTypes = ['text', 'email', 'password', 'select', 'checkbox'];
+      if (!field.type || !validTypes.includes(field.type)) {
+        warnings.push(`⚠️ Поле "${field.label || field.model}" имеет некорректный type "${field.type}". Будет использован "text".`);
+        field.type = 'text';
+      }
+
+      if (field.type === 'select' && !Array.isArray(field.options)) {
+        warnings.push(`⚠️ У поля "${field.label || field.model}" тип "select", но не указаны options.`);
+        field.options = [];
+      }
+    });
+
     parsedSchema.value = schema;
-    schemaError.value = null;
+    schemaError.value = warnings.length ? warnings.join('\n') : null;
 
     const data = {};
     schema.fields.forEach(field => {
       data[field.model] = field.type === 'checkbox' ? false : '';
     });
     formData.value = data;
+
   } catch (err) {
-    schemaError.value = 'Ошибка в JSON: ' + err.message;
     parsedSchema.value = null;
+    schemaError.value = 'Ошибка в JSON: ' + err.message;
   }
 };
 
 applySchema();
 
-const displayData = computed(() => {
-  return JSON.stringify(formData.value, null, 2);
-});
+const displayData = computed(() => JSON.stringify(formData.value, null, 2));
 </script>
 
 <template>
@@ -56,8 +81,10 @@ const displayData = computed(() => {
         class="app__schema-textarea"
         placeholder='{"fields": [...]}'
       ></textarea>
+
       <button @click="applySchema" class="app__apply-btn">Применить схему</button>
-      <div v-if="schemaError" class="app__error">{{ schemaError }}</div>
+
+      <div v-if="schemaError" class="app__error" v-html="schemaError.replace(/\n/g, '<br/>')"></div>
     </div>
 
     <div v-if="parsedSchema" class="app__form-container">
@@ -116,6 +143,7 @@ const displayData = computed(() => {
   color: #e74c3c;
   margin-top: 8px;
   font-size: 14px;
+  white-space: pre-line;
 }
 
 .app__form-container {
